@@ -25,7 +25,6 @@ import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleListProperty;
-import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -52,7 +51,6 @@ import org.jackhuang.hmcl.util.javafx.MappedObservableList;
 
 import java.util.Locale;
 
-import static org.jackhuang.hmcl.setting.ConfigHolder.globalConfig;
 import static org.jackhuang.hmcl.util.i18n.I18n.i18n;
 import static org.jackhuang.hmcl.util.javafx.ExtendedProperties.createSelectedItemPropertyFor;
 import static org.jackhuang.hmcl.util.logging.Logger.LOG;
@@ -61,22 +59,7 @@ public final class AccountListPage extends DecoratorAnimatedPage implements Deco
     static final BooleanProperty RESTRICTED = new SimpleBooleanProperty(true);
 
     static {
-        String property = System.getProperty("hmcl.offline.auth.restricted", "auto");
-
-        if ("false".equals(property)
-                || "auto".equals(property) && LocaleUtils.IS_CHINA_MAINLAND
-                || globalConfig().isEnableOfflineAccount())
-            RESTRICTED.set(false);
-        else
-            globalConfig().enableOfflineAccountProperty().addListener(new ChangeListener<Boolean>() {
-                @Override
-                public void changed(ObservableValue<? extends Boolean> o, Boolean oldValue, Boolean newValue) {
-                    if (newValue) {
-                        globalConfig().enableOfflineAccountProperty().removeListener(this);
-                        RESTRICTED.set(false);
-                    }
-                }
-            });
+        RESTRICTED.set(false);
     }
 
     private final ObservableList<AccountListItem> items;
@@ -115,7 +98,6 @@ public final class AccountListPage extends DecoratorAnimatedPage implements Deco
     private static class AccountListPageSkin extends DecoratorAnimatedPageSkin<AccountListPage> {
 
         private final ObservableList<AdvancedListItem> authServerItems;
-        private ChangeListener<Boolean> holder;
 
         public AccountListPageSkin(AccountListPage skinnable) {
             super(skinnable);
@@ -166,27 +148,7 @@ public final class AccountListPage extends DecoratorAnimatedPage implements Deco
                     Bindings.bindContent(boxAuthServers.getChildren(), authServerItems);
 
                     ClassTitle title = new ClassTitle(i18n("account.create").toUpperCase(Locale.ROOT));
-                    if (RESTRICTED.get()) {
-                        VBox wrapper = new VBox(offlineItem, boxAuthServers);
-                        wrapper.setPadding(Insets.EMPTY);
-                        FXUtils.installFastTooltip(wrapper, i18n("account.login.restricted"));
-
-                        offlineItem.setDisable(true);
-                        boxAuthServers.setDisable(true);
-
-                        boxMethods.getChildren().setAll(title, microsoftItem, wrapper);
-
-                        holder = FXUtils.onWeakChange(RESTRICTED, value -> {
-                            if (!value) {
-                                holder = null;
-                                offlineItem.setDisable(false);
-                                boxAuthServers.setDisable(false);
-                                boxMethods.getChildren().setAll(title, microsoftItem, offlineItem, boxAuthServers);
-                            }
-                        });
-                    } else {
-                        boxMethods.getChildren().setAll(title, microsoftItem, offlineItem, boxAuthServers);
-                    }
+                    boxMethods.getChildren().setAll(title, microsoftItem, offlineItem, boxAuthServers);
                 }
 
                 AdvancedListItem addAuthServerItem = new AdvancedListItem();
